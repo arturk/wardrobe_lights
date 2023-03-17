@@ -1,67 +1,67 @@
 #include <Arduino.h>
-// простейшие динамические эффекты
-// сначала ознакомься с примером microLED_guide !!!
 
-#define STRIP_SHELF_PIN 9     // пин полки
-#define STRIP_WALL_PIN 8    // пин стенки
+#define STRIP_SHELF_PIN 4     // пин полки
+#define STRIP_WALL_PIN 3    // пин стенки
 #define NUMLEDS_SHELF 20
-#define NUMLEDS_WALL 4
+#define WALL_STRIPS 1
+#define WALL_STRIP_LEDS 1
 #define TIMEOUT 5
-#define PIR_SENSOR 12
+#define PIR_SENSOR 7
 #define BRIGHTNESS 150U
 #define SHELF_COLOR 0x4374e8
-#define WALL_COLOR 0x262dc5
-#define SHELF_EFFECT_SPEED 20
-#define WALL_EFFECT_SPEED 1
+#define WALL_COLOR 0xE91627
+#define SHELF_EFFECT_SPEED 1
+#define WALL_EFFECT_SPEED 3
 
 static uint32_t timeoutCounter;
-static int shelf_counter = 0;
-static int shelf_counter_brightness = 0;
-static byte running_dots_counter = 0;
-static bool active = false;
+static bool active = true;
+
+static const byte brightness_delta = 1;
+static byte shelf_skip_counter = SHELF_EFFECT_SPEED;
+static uint8_t shelf_counter_brightness = 0;
+
+static uint8_t wall_counter_brightness = 0;
+static byte wall_skip_counter = WALL_EFFECT_SPEED;
 
 #define COLOR_DEBTH 3
 #include <microLED.h>   // подключаем библу
 microLED<NUMLEDS_SHELF, STRIP_SHELF_PIN, MLED_NO_CLOCK, LED_WS2818, ORDER_GRB, CLI_AVER> strip_shelf;
-microLED<NUMLEDS_WALL, STRIP_WALL_PIN, MLED_NO_CLOCK, LED_WS2818, ORDER_GRB, CLI_AVER> strip_wall;
+microLED<WALL_STRIPS * WALL_STRIP_LEDS, STRIP_WALL_PIN, MLED_NO_CLOCK, LED_WS2818, ORDER_GRB, CLI_AVER> strip_wall;
 
-void shelf_filler() {
-  for(byte i=0; i<SHELF_EFFECT_SPEED; i++){
-    if(active){
-      if(shelf_counter < NUMLEDS_SHELF){
-        if(shelf_counter_brightness < BRIGHTNESS) {
-          shelf_counter_brightness++;
-        } else {
-          shelf_counter++;
-          shelf_counter_brightness = 0;
-        }
-        strip_shelf.set(shelf_counter, mWheel(SHELF_COLOR, shelf_counter_brightness));
-      }
-    } else {
-      if(shelf_counter > 0){
-        if(shelf_counter_brightness > 0) {
-          shelf_counter_brightness--;
-        } else {
-          shelf_counter_brightness = BRIGHTNESS;
-          shelf_counter--;
-        }
-        strip_shelf.set(shelf_counter, mWheel(SHELF_COLOR, shelf_counter_brightness));
+void brightness_counter(uint8_t effect_speed, uint8_t& skip_counter, uint8_t& brightness_counter){
+  if(skip_counter > 0) {
+    skip_counter--;
+    return;
+  }
+  skip_counter = effect_speed;
+  if(active){
+    if(brightness_counter < BRIGHTNESS) {
+      if(255 - brightness_counter > brightness_delta) {
+        brightness_counter += brightness_delta;
+      } else {
+        brightness_counter += 255 - brightness_counter;
       }
     }
-    delay(5);
+  } else {
+    if(brightness_counter > 0) {
+      if(brightness_counter > brightness_delta) {
+        brightness_counter -= brightness_delta;
+      } else {
+        brightness_counter = 0;
+      }
+    }
   }
 }
 
-void filler2() {
-  strip_wall.clear(); // clear
-  if(active) { // fill strip to led counter
-    if (running_dots_counter == NUMLEDS_WALL) {
-      strip_wall.leds[0] = mRed;
-      running_dots_counter = 0;
-    }
-    strip_wall.leds[running_dots_counter] = mWhite;
-    running_dots_counter++;
-  }
+void shelf_filler() {
+  brightness_counter(SHELF_EFFECT_SPEED, shelf_skip_counter, shelf_counter_brightness);
+  strip_shelf.setBrightness(shelf_counter_brightness);
+  strip_shelf.show();
+}
+
+void wall_filler() {
+  brightness_counter(WALL_EFFECT_SPEED, wall_skip_counter, wall_counter_brightness);
+  strip_wall.setBrightness(wall_counter_brightness);
   strip_wall.show();
 }
 
@@ -78,11 +78,15 @@ void check_sensor_activity() {
 void loop_iteration() {
   check_sensor_activity();
   shelf_filler();
-  filler2();
+  wall_filler();
+  delay(10);
 }
 
 void setup() {
   pinMode(PIR_SENSOR, INPUT);
+  strip_shelf.fill(SHELF_COLOR);
+  strip_shelf.setBrightness(0);
+  strip_wall.fill(WALL_COLOR);
 }
 
 void loop() {

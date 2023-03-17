@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "${workspaceFolder}/.pio/libdeps/uno/Unity"
+    "cmake.sourceDirectory": "${workspaceFolder}/.pio/libdeps/uno/Unity",
+    "cmake.configureOnOpen": false
 }
