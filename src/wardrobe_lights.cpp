@@ -5,7 +5,7 @@
 #define NUMLEDS_SHELF 18    // колличество лед секций в полке
 #define WALL_STRIPS 7     // колличество полосок в стенке
 #define WALL_STRIP_LEDS 5 // колличество лед секций в полоске стенки
-#define TIMEOUT 5   // время активности эффекта
+#define TIMEOUT 20   // время активности эффекта
 #define PIR_SENSOR 10   // пин сенсора движения
 #define BRIGHTNESS 150  // яркость эффектов
 #define SHELF_COLOR 1300  // цвет эффекта полки
@@ -102,6 +102,7 @@ void candle_filler(){
     strip_wall.clear();
     current_wall_led = 0;
     current_wall_strip = 0;
+    wall_skip_counter = WALL_EFFECT_SPEED;
   }
 }
 
@@ -136,14 +137,14 @@ void check_sensor_activity() {
 
 void loop_iteration() {
   check_sensor_activity();
-  //shelf_filler();
+  shelf_filler();
   wall_filler();
-  delay(10);
+  delay(20);
 }
 
 void setup() {
   pinMode(PIR_SENSOR, INPUT);
-  //strip_shelf.fill(mWheel(SHELF_COLOR, 0));
+  strip_shelf.fill(mWheel(SHELF_COLOR, 100));
   strip_wall.setBrightness(0);
 }
 
