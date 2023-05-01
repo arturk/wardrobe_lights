@@ -1,12 +1,12 @@
 #include <Arduino.h>
 
-#define STRIP_SHELF_PIN 11     // пин полки
+#define STRIP_SHELF_PIN 6     // пин полки
 #define STRIP_WALL_PIN 3    // пин стенки
-#define NUMLEDS_SHELF 20    // колличество лед секций в полке
-#define WALL_STRIPS 4     // колличество полосок в стенке
-#define WALL_STRIP_LEDS 2 // колличество лед секций в полоске стенки
+#define NUMLEDS_SHELF 18    // колличество лед секций в полке
+#define WALL_STRIPS 7     // колличество полосок в стенке
+#define WALL_STRIP_LEDS 5 // колличество лед секций в полоске стенки
 #define TIMEOUT 5   // время активности эффекта
-#define PIR_SENSOR 7   // пин сенсора движения
+#define PIR_SENSOR 10   // пин сенсора движения
 #define BRIGHTNESS 150  // яркость эффектов
 #define SHELF_COLOR 1300  // цвет эффекта полки
 #define SHELF_EFFECT_SPEED 1  // скорость эффекта полки, чем выше значение, тем медленее
@@ -30,8 +30,8 @@ static uint8_t wave_skip_counter = WAVE_SPEED;
 
 #define COLOR_DEBTH 3
 #include <microLED.h>   // подключаем библу
-microLED<NUMLEDS_SHELF, STRIP_SHELF_PIN, MLED_NO_CLOCK, LED_WS2818, ORDER_GRB, CLI_AVER> strip_shelf;
-microLED<WALL_STRIPS * WALL_STRIP_LEDS, STRIP_WALL_PIN, MLED_NO_CLOCK, LED_WS2818, ORDER_GRB, CLI_AVER> strip_wall;
+microLED<NUMLEDS_SHELF, STRIP_SHELF_PIN, MLED_NO_CLOCK, LED_WS2811, ORDER_GRB, CLI_AVER> strip_shelf;
+microLED<WALL_STRIPS * WALL_STRIP_LEDS, STRIP_WALL_PIN, MLED_NO_CLOCK, LED_WS2811, ORDER_GRB, CLI_AVER> strip_wall;
 
 void brightness_increase_filler(uint8_t effect_speed, uint8_t& skip_counter, uint8_t& brightness_counter){
   if(skip_counter > 0) {
@@ -83,19 +83,21 @@ void wave(uint8_t effect_speed, uint8_t& skip_counter, uint8_t& middle, int8_t& 
 void candle_filler(){
   if(active) {
     strip_wall.setBrightness(BRIGHTNESS);
-    mData color = mPurple;
-    if(current_wall_led != 0 && current_wall_led % WALL_STRIP_LEDS == 0) {
-        current_wall_strip += 1;
-        current_wall_led = 0;
-    }
-    if(current_wall_strip > WALL_STRIPS - 1){
-      current_wall_strip = 0;
-    }
-    if(current_wall_led % WALL_STRIP_LEDS-1 == 0){
-      color = mWheel(random(0, 100), random(150, 230));
+    mData color = mPurple; // цвет свечи
+    if(current_wall_led != 0 && ((current_wall_led+1) % WALL_STRIP_LEDS == 0)) {
+      color = mWheel(random(0, 100), random(120, 230)); // цвет огня
     }
     strip_wall.set(current_wall_strip * WALL_STRIP_LEDS + current_wall_led, color);
-    current_wall_led+=1;
+    current_wall_led += 1;
+    // последний лед в полоске?
+    if(current_wall_led == WALL_STRIP_LEDS){
+      current_wall_led = 0;
+      current_wall_strip += 1;
+    }
+    // последняя полоска?
+    if(current_wall_strip == WALL_STRIPS){
+      current_wall_strip = 0;
+    }
   } else {
     strip_wall.clear();
     current_wall_led = 0;
@@ -134,14 +136,14 @@ void check_sensor_activity() {
 
 void loop_iteration() {
   check_sensor_activity();
-  shelf_filler();
+  //shelf_filler();
   wall_filler();
   delay(10);
 }
 
 void setup() {
   pinMode(PIR_SENSOR, INPUT);
-  strip_shelf.fill(mWheel(SHELF_COLOR, 0));
+  //strip_shelf.fill(mWheel(SHELF_COLOR, 0));
   strip_wall.setBrightness(0);
 }
 
